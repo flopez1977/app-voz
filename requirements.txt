@@ -1,0 +1,4 @@
+# App-voz runtime (Mac Apple Silicon)
+mlx
+mlx-audio
+flask

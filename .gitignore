@@ -1,0 +1,16 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Generated audio / runs
+output/
+audio_chunks/
+*.local
+
+# User-added assets (only shipped defaults are tracked)
+voices/user-*/
+music/user-*/
+
+# OS
+.DS_Store
