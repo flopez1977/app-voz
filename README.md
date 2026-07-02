@@ -13,6 +13,13 @@ Claude Code. No hay servidores, ni cuentas, ni cuotas.
 - **Claude Code** instalado, con tu cuenta.
 - Conexión a internet la primera vez (descarga el modelo, ~500 MB).
 
+## Modelo de IA (voz)
+
+- **Motor:** [Qwen3-TTS-12Hz-1.7B](https://huggingface.co/mlx-community/Qwen3-TTS-12Hz-1.7B-Base-8bit) — variante `Base-8bit`, vía **MLX** (Apple Silicon).
+- **Clonación de voz:** ICL (in-context learning) — a partir de tu muestra `reference.wav` + su transcripción `reference.txt`.
+- **Voces de ejemplo:** generadas con la variante `CustomVoice` del mismo modelo (speakers sintéticos, sin persona real).
+- El modelo se descarga solo durante `/setup` (~500 MB) desde Hugging Face (`mlx-community`). **Todo corre en local** — tu voz y tus textos no salen de tu Mac.
+
 ## Instalación (la hace Claude por ti)
 
 1. Clona este repo y abre la carpeta en Claude Code.
