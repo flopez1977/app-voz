@@ -5,6 +5,7 @@ Runs a single job in a thread, emitting progress via state.update(). Uses the
 engine modules. MLX is only touched when a voice chunk is actually synthesized.
 """
 
+import json
 import os
 import threading
 
@@ -18,6 +19,47 @@ OUTPUT_DIR = os.path.join(ROOT, "output")
 CHUNKS_DIR = os.path.join(OUTPUT_DIR, "chunks")
 
 _thread = None
+
+
+def _manifest_path(chunks_dir):
+    return os.path.join(chunks_dir, "manifest.json")
+
+
+def _load_manifest(chunks_dir):
+    try:
+        with open(_manifest_path(chunks_dir), encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def sync_chunk_cache(chunks, chunks_dir):
+    """
+    Keep the chunk-audio cache consistent with the current script.
+
+    Deletes cached wavs whose text changed (so they are re-synthesized) and
+    orphan wavs whose label is no longer in the plan. Returns the current
+    {label: text} map. Chunks whose text is unchanged keep their wav, so a
+    gap-only re-assemble stays fast (speak() skips them).
+    """
+    manifest = _load_manifest(chunks_dir)
+    current = {c["id"]: c["text"] for c in chunks if c["type"] == "voice"}
+    for label, text in current.items():
+        if manifest.get(label) != text:
+            wav = os.path.join(chunks_dir, label + ".wav")
+            if os.path.exists(wav):
+                os.remove(wav)
+    if os.path.isdir(chunks_dir):
+        for f in os.listdir(chunks_dir):
+            if f.startswith("chunk-") and f.endswith(".wav") and f[:-4] not in current:
+                os.remove(os.path.join(chunks_dir, f))
+    return current
+
+
+def _save_manifest(chunks_dir, current):
+    os.makedirs(chunks_dir, exist_ok=True)
+    with open(_manifest_path(chunks_dir), "w", encoding="utf-8") as f:
+        json.dump(current, f)
 
 
 def _run(job):
@@ -50,6 +92,8 @@ def _run(job):
         })
 
         os.makedirs(CHUNKS_DIR, exist_ok=True)
+        # Drop cached wavs whose text changed (stale) or whose label is gone.
+        current = sync_chunk_cache(chunks, CHUNKS_DIR)
         profile = job["voice_profile"]
         speed = job.get("speed", 0.9)
 
@@ -64,6 +108,7 @@ def _run(job):
                 "progress": int(done / max(len(voice_chunks), 1) * 90),
                 "message": f"Chunk {done}/{len(voice_chunks)}",
             })
+        _save_manifest(CHUNKS_DIR, current)
 
         st.update({"phase": "assemble", "message": "Ensamblando audio..."})
         mode = job.get("mode", "voice")
